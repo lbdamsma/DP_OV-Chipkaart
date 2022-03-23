@@ -1,35 +1,37 @@
 package nl.hu.dp;
 
-import java.sql.*;
-import java.util.ArrayList;
-import java.util.List;
+import java.sql.Date;
 
 public class Reiziger {
-    private int id = 0;
-    private String voorletters = "";
-    private String tussenvoegsel = "";
-    private String achternaam = "";
-    private Date geboortedatum = new Date(0);
 
-    public String getVoorletters() {
-        return this.voorletters;
-    }
+    private int id;
+    private String voorletters;
+    private String tussenvoegsels;
+    private String achternaam;
+    private Date geboortedatum;
+    private Adres adres;
 
-    public void setVoorletters(String voorletters) {
-        if (voorletters != null) {
-            if (voorletters.length() > 10) {
-                voorletters = voorletters.substring(0, 10);
-            }
-            this.voorletters = voorletters;
-        }
+    public Reiziger(int id, String voorletters, String tussenvoegsels, String achternaam, Date geboortedatum) {
+        this.id = id;
+        this.voorletters = voorletters;
+        this.tussenvoegsels = tussenvoegsels;
+        this.achternaam = achternaam;
+        this.geboortedatum = geboortedatum;
     }
 
     public int getId() {
-        return this.id;
+        return id;
     }
-
     public void setId(int id) {
         this.id = id;
+    }
+
+    public String getVoorletters() {
+        return voorletters;
+    }
+
+    public String getTussenvoegsels() {
+        return tussenvoegsels;
     }
 
     public String getAchternaam() {
@@ -40,35 +42,18 @@ public class Reiziger {
         return geboortedatum;
     }
 
-    public void setGeboortedatum(Date geboortedatum) {
-        this.geboortedatum = geboortedatum;
+    public Adres getAdres() {
+        return adres;
     }
 
-    public String getTussenvoegsel() {
-        return this.tussenvoegsel;
+    public void setAdres(Adres adres) {
+        this.adres = adres;
     }
 
-    public void setTussenvoegsel(String tussenvoegsel) {
-        if (tussenvoegsel != null) {
-            if (tussenvoegsel.length() > 10) {
-                tussenvoegsel = tussenvoegsel.substring(0, 10);
-            }
-            this.tussenvoegsel = tussenvoegsel;
-        }
+    @Override
+    public String toString() {
+        return "Reiziger: " + "id: " + id + ", voorletters: '" + voorletters + '\'' +
+                ", tussenvoegsels: '" + tussenvoegsels + '\'' + ", achternaam: '" +
+                achternaam + '\'' + ", geboortedatum: " + geboortedatum + ", " + adres;
     }
-
-    public void setAchternaam(String achternaam) {
-        if (achternaam != null) {
-            if (achternaam.length() > 10) {
-                achternaam = achternaam.substring(0, 10);
-            }
-            this.achternaam = achternaam;
-        }
-    }
-
-    public String toString(){
-        String string ="#" + id + ": " + voorletters + ". " + tussenvoegsel + " " + achternaam + " " + "(" + geboortedatum + ")";
-        return string;
-    }
-
 }

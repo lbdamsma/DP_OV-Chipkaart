@@ -1,74 +1,39 @@
 package nl.hu.dp;
 
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
 import java.util.List;
-import java.util.Properties;
 
 public class Main {
-    private static Connection conn = null;
 
-    private static void createConnection() {
-        if(conn == null) {
-            String url = "jdbc:postgresql://localhost/ovchip";
-            // creates a property object
-            Properties props = new Properties();
-            // sets the user property on the props
-            props.setProperty("user", "postgres");
-            // sets the user property on the props
-            props.setProperty("password", "MelissaVoets13");
-            try {
-                // use the props and base url to create a db connection
-                conn = DriverManager.getConnection(url, props);
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-        }
-    }
+    private static Connection connection;
 
-    private static void closeConnection() {
-        try {
-            if(conn != null) {
-                conn.close();
-                conn = null;
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public static void main(String[] args) {
-        createConnection();
-        System.out.println("Alle reizigers: ");
-        try {
-            Statement st = conn.createStatement();
-            ResultSet rs = st.executeQuery("SELECT * from reiziger");
-            while (rs != null && rs.next()) {
-                String name;
-                String insertion = rs.getString("tussenvoegsel");
-                String initial = rs.getString("voorletters");
-                String lastName = rs.getString("achternaam");
-                if (insertion != null) {
-                    name = String.format("%s %s %s",initial ,insertion, lastName);
-                } else {
-                    name = String.format("%s %s", initial, lastName);
-                }
-                System.out.printf("#%s %s (%s)%n", rs.getInt("reiziger_id"), name, rs.getString("geboortedatum"));
-            }
-            System.out.println(new ReizigerDAOsql(conn).findAll());
-            testReizigerDAO(new ReizigerDAOsql(conn));
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
+    public static void main(String[] args) throws SQLException {
+        getConnection();
+        ReizigerDAOsql reizigerDAO = new ReizigerDAOsql(connection);
+        AdresDAOsql adresDAO = new AdresDAOsql(connection);
+        reizigerDAO.setAdao(adresDAO);
+        testReizigerDAO(reizigerDAO);
+        testAdresDao(adresDAO);
         closeConnection();
     }
 
-    /**
-     * P2. Reiziger DAO: persistentie van een klasse
-     *
-     * Deze methode test de CRUD-functionaliteit van de Reiziger DAO
-     *
-     * @throws SQLException
-     */
+    private static void getConnection(){
+        String url = "jdbc:postgresql://localhost/ovchip?user=postgres&password=MelissaVoets13";
+        try {
+            Connection conn = DriverManager.getConnection(url);
+            connection = conn;
+
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
+        }
+    }
+
+    private static void closeConnection() throws SQLException {
+        connection.close();
+    }
+
     private static void testReizigerDAO(ReizigerDAO rdao) throws SQLException {
         System.out.println("\n---------- Test ReizigerDAO -------------");
 
@@ -82,16 +47,63 @@ public class Main {
 
         // Maak een nieuwe reiziger aan en persisteer deze in de database
         String gbdatum = "1981-03-14";
-        Reiziger sietske = new Reiziger();
-        sietske.setAchternaam("Broers");
-        sietske.setGeboortedatum(Date.valueOf(gbdatum));
-        sietske.setVoorletters("S");
-        sietske.setTussenvoegsel("");
+        Reiziger sietske = new Reiziger(77, "S", "", "Boers", java.sql.Date.valueOf(gbdatum));
+        sietske.setAdres(new Adres(22, "3512PA", "5", "Lange nieuwstraat", "Utrecht", 77));
         System.out.print("[Test] Eerst " + reizigers.size() + " reizigers, na ReizigerDAO.save() ");
         rdao.save(sietske);
         reizigers = rdao.findAll();
+        System.out.println(reizigers.size() + " reizigers");
+        System.out.println(rdao.findById(sietske.getId()));
+
+        // Update een gebruiker
+        System.out.println("\n[Test] ReizigerDAO.update() geeft de volgende reiziger:");
+        rdao.update(sietske);
+        System.out.println(rdao.findById(sietske.getId()));
+
+        // Delete een gebruiker
+        System.out.print("\n[Test] Eerst " + reizigers.size() + " reizigers, na ReizigerDAO.delete() ");
+        rdao.delete(sietske);
+        reizigers = rdao.findAll();
         System.out.println(reizigers.size() + " reizigers\n");
 
-        // Voeg aanvullende tests van de ontbrekende CRUD-operaties in.
+        // Find een reiziger by ID
+        System.out.println("[Test] ReizigerDAO.findById() geeft de volgende reiziger:");
+        System.out.println(rdao.findById(2));
+
+        // Find een reiziger by geboortedatum
+        System.out.println("\n[Test] ReizigerDAO.findByGbdatum() geeft de volgende reiziger:");
+        String gbdatum2 = "1998-08-11";
+        System.out.println(rdao.findByGbdatum(gbdatum2));
     }
+
+    private static void testAdresDao(AdresDAO adao) throws SQLException {
+        System.out.println("\n---------- Test AdresDAO -------------");
+
+        List<Adres> adressen = adao.findAll();
+        System.out.println("[Test] AdresDAO.findAll() geeft de volgende adressen:");
+        for (Adres a : adressen) {
+            System.out.println(a);
+        }
+
+        // Delete een adres
+        System.out.print("\n[Test] Eerst " + adressen.size() + " reizigers, na AdresDAO.delete() ");
+        Adres test = new Adres(4, "3817CH", "4", "Arnhemseweg", "Amersfoort", 4);
+        adao.delete(test);
+        adressen = adao.findAll();
+        System.out.println(adressen.size() + " adressen\n");
+
+        // Save een adres
+        System.out.print("[Test] Eerst " + adressen.size() + " reizigers, na AdresDAO.save() ");
+        adao.save(test);
+        adressen = adao.findAll();
+        System.out.println(adressen.size() + " adressen\n");
+
+        // Update een adres en find by reiziger
+        System.out.println("[Test] AdresDAO.update() geeft het volgende adres:");
+        adao.update(test);
+        String gbdatum = "2002-12-03";
+        Reiziger blank = new Reiziger(4, "F", null, "Memari", java.sql.Date.valueOf(gbdatum));
+        System.out.println(adao.findByReiziger(blank));
+    }
+
 }
