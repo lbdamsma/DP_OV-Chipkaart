@@ -1,8 +1,10 @@
 package nl.hu.dp;
 
 import java.sql.Connection;
+import java.sql.Date;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.time.LocalDate;
 import java.util.List;
 
 public class Main {
@@ -11,11 +13,16 @@ public class Main {
 
     public static void main(String[] args) throws SQLException {
         getConnection();
-        ReizigerDAOsql reizigerDAO = new ReizigerDAOsql(connection);
+        ReizigerDAOPsql reizigerDAO = new ReizigerDAOPsql(connection);
         AdresDAOsql adresDAO = new AdresDAOsql(connection);
+        OVChipkaartDAOPsql ovchipDAO = new OVChipkaartDAOPsql(connection);
+        ProductDAOPsql prDAO = new ProductDAOPsql(connection);
         reizigerDAO.setAdao(adresDAO);
-        testReizigerDAO(reizigerDAO);
-        testAdresDao(adresDAO);
+        reizigerDAO.setOvcdao(ovchipDAO);
+        prDAO.setOvcdao(ovchipDAO);
+        testProductDAO(prDAO);
+//        delete(prDAO);
+
         closeConnection();
     }
 
@@ -34,76 +41,57 @@ public class Main {
         connection.close();
     }
 
-    private static void testReizigerDAO(ReizigerDAO rdao) throws SQLException {
-        System.out.println("\n---------- Test ReizigerDAO -------------");
+    private static void testProductDAO(ProductDAOPsql prdao) throws SQLException {
+        Product pr1 = new Product(33, "Test", "Test", 10.00F);
+        System.out.println("Save [" + pr1 + "] in de Database");
+        OVChipkaart ov1 = new OVChipkaart(18326, Date.valueOf("2017-12-31"), 2, 0.00F, 5);
+        ov1.addProduct(pr1);
 
-        // Haal alle reizigers op uit de database
-        List<Reiziger> reizigers = rdao.findAll();
-        System.out.println("[Test] ReizigerDAO.findAll() geeft de volgende reizigers:");
-        for (Reiziger r : reizigers) {
-            System.out.println(r);
-        }
+        prdao.save(pr1);
+
         System.out.println();
 
-        // Maak een nieuwe reiziger aan en persisteer deze in de database
-        String gbdatum = "1981-03-14";
-        Reiziger sietske = new Reiziger(77, "S", "", "Boers", java.sql.Date.valueOf(gbdatum));
-        sietske.setAdres(new Adres(22, "3512PA", "5", "Lange nieuwstraat", "Utrecht", 77));
-        System.out.print("[Test] Eerst " + reizigers.size() + " reizigers, na ReizigerDAO.save() ");
-        rdao.save(sietske);
-        reizigers = rdao.findAll();
-        System.out.println(reizigers.size() + " reizigers");
-        System.out.println(rdao.findById(sietske.getId()));
+        System.out.println("findAll: ");
+        List<Product> y = prdao.findAll();
+        for (Product p : y) {
+            System.out.println(p);
+        }
+        System.out.println(y.size() + " producten in totaal");
 
-        // Update een gebruiker
-        System.out.println("\n[Test] ReizigerDAO.update() geeft de volgende reiziger:");
-        rdao.update(sietske);
-        System.out.println(rdao.findById(sietske.getId()));
+        System.out.println();
 
-        // Delete een gebruiker
-        System.out.print("\n[Test] Eerst " + reizigers.size() + " reizigers, na ReizigerDAO.delete() ");
-        rdao.delete(sietske);
-        reizigers = rdao.findAll();
-        System.out.println(reizigers.size() + " reizigers\n");
-
-        // Find een reiziger by ID
-        System.out.println("[Test] ReizigerDAO.findById() geeft de volgende reiziger:");
-        System.out.println(rdao.findById(2));
-
-        // Find een reiziger by geboortedatum
-        System.out.println("\n[Test] ReizigerDAO.findByGbdatum() geeft de volgende reiziger:");
-        String gbdatum2 = "1998-08-11";
-        System.out.println(rdao.findByGbdatum(gbdatum2));
-    }
-
-    private static void testAdresDao(AdresDAO adao) throws SQLException {
-        System.out.println("\n---------- Test AdresDAO -------------");
-
-        List<Adres> adressen = adao.findAll();
-        System.out.println("[Test] AdresDAO.findAll() geeft de volgende adressen:");
-        for (Adres a : adressen) {
-            System.out.println(a);
+        System.out.println("Update: ");
+        prdao.update(pr1);
+        y = prdao.findAll();
+        for (Product p : y) {
+            if (p.getProduct_nummer() == 33) {
+                System.out.println(p);
+            }
         }
 
-        // Delete een adres
-        System.out.print("\n[Test] Eerst " + adressen.size() + " reizigers, na AdresDAO.delete() ");
-        Adres test = new Adres(4, "3817CH", "4", "Arnhemseweg", "Amersfoort", 4);
-        adao.delete(test);
-        adressen = adao.findAll();
-        System.out.println(adressen.size() + " adressen\n");
+        System.out.println();
 
-        // Save een adres
-        System.out.print("[Test] Eerst " + adressen.size() + " reizigers, na AdresDAO.save() ");
-        adao.save(test);
-        adressen = adao.findAll();
-        System.out.println(adressen.size() + " adressen\n");
+        prdao.delete(pr1);
+        List<Product> producten = prdao.findAll();
+        System.out.println("Aantal producten na delete: ");
+        System.out.println(producten.size());
 
-        // Update een adres en find by reiziger
-        System.out.println("[Test] AdresDAO.update() geeft het volgende adres:");
-        adao.update(test);
-        String gbdatum = "2002-12-03";
-        Reiziger blank = new Reiziger(4, "F", null, "Memari", java.sql.Date.valueOf(gbdatum));
-        System.out.println(adao.findByReiziger(blank));
+        System.out.println();
+
+        System.out.println("findByOvchipkaart: ");
+        Date d = Date.valueOf("2018-05-31");
+        OVChipkaart test = new OVChipkaart(35283, d, 2, 25.50F, 2);
+        List<Product> x = prdao.findByOVChipkaart(test);
+        for (Product p : x){
+            System.out.println(p);
+        }
     }
+
+    private static void delete(ProductDAOPsql prdao) {
+        Product pr1 = new Product(33, "Test", "Test", 10.00F);
+        prdao.delete(pr1);
+
+    }
+
 
 }

@@ -1,6 +1,9 @@
 package nl.hu.dp;
 
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -13,7 +16,7 @@ public class AdresDAOsql implements AdresDAO {
         this.conn = conn;
     }
 
-    public AdresDAOsql(Connection conn, ReizigerDAOsql rdaosql){
+    public AdresDAOsql(Connection conn, ReizigerDAOPsql rdaosql){
         this.conn = conn;
         this.rdao = rdaosql;
     }

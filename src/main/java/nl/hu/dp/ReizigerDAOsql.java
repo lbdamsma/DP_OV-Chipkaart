@@ -4,22 +4,33 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ReizigerDAOsql implements ReizigerDAO {
+public class ReizigerDAOPsql implements ReizigerDAO {
 
     private Connection conn;
     private AdresDAO adao;
+    private OVChipkaartDAO ovcdao;
 
-    public ReizigerDAOsql(Connection conn) {
+    public ReizigerDAOPsql(Connection conn) {
         this.conn = conn;
     }
 
-    public ReizigerDAOsql(Connection conn, AdresDAOsql adaosql){
+    public ReizigerDAOPsql(Connection conn, AdresDAOsql adaosql){
         this.conn = conn;
         this.adao = adaosql;
     }
 
+    public ReizigerDAOPsql(Connection conn, AdresDAOsql adaosql, OVChipkaartDAO ovcdao) {
+        this.conn = conn;
+        this.adao = adaosql;
+        this.ovcdao = ovcdao;
+    }
+
     public void setAdao(AdresDAO adao) {
         this.adao = adao;
+    }
+
+    public void setOvcdao(OVChipkaartDAO ovcdao) {
+        this.ovcdao = ovcdao;
     }
 
     @Override
@@ -47,6 +58,11 @@ public class ReizigerDAOsql implements ReizigerDAO {
             prestat.executeUpdate();
 
             adao.save(reiziger.getAdres());
+
+            for (OVChipkaart ov : reiziger.getOVChipkaarten()) {
+                ovcdao.save(ov);
+            }
+
             return true;
 
         } catch (SQLException throwables) {
@@ -69,6 +85,11 @@ public class ReizigerDAOsql implements ReizigerDAO {
             prestat.executeUpdate();
 
             adao.update(reiziger.getAdres());
+
+            for (OVChipkaart ov : reiziger.getOVChipkaarten()) {
+                ovcdao.update(ov);
+            }
+
             return true;
 
         } catch (SQLException throwables) {
@@ -89,6 +110,10 @@ public class ReizigerDAOsql implements ReizigerDAO {
 
             adao.delete(reiziger.getAdres());
             prestat.executeUpdate();
+
+            for (OVChipkaart ov : reiziger.getOVChipkaarten()) {
+                ovcdao.delete(ov);
+            }
 
 
             return true;
