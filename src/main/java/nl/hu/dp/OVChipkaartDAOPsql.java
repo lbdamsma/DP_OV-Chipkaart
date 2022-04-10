@@ -1,177 +1,177 @@
 package nl.hu.dp;
 
-import java.sql.*;
-import java.time.LocalDate;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
 public class OVChipkaartDAOPsql implements OVChipkaartDAO {
-
     private Connection conn;
-    private ReizigerDAO rdao;
     private ProductDAOPsql pdao;
 
-    public OVChipkaartDAOPsql(Connection conn) {
-        this.conn = conn;
-    }
-    public  OVChipkaartDAOPsql(Connection conn, ReizigerDAOPsql rdaosql) {
-        this.conn = conn;
-        this.rdao = rdaosql;
+    public ProductDAOPsql getPdao() {
+        return pdao;
     }
 
     public void setPdao(ProductDAOPsql pdao) {
         this.pdao = pdao;
     }
 
-    public void setRdao(ReizigerDAO rdao) {
-        this.rdao = rdao;
+    public OVChipkaartDAOPsql(Connection conn) {
+        this.conn = conn;
     }
 
     @Override
-    public boolean save(OVChipkaart ovChipkaart) {
-        String SQl = "INSERT INTO ov_chipkaart VALUES(?, ?, ?, ?, ?)";
-        String SQL2 = "INSERT INTO ov_chipkaart_product VALUES (?, ?, ?, ?)";
-
+    public boolean update(OVChipkaart inOVChipkaart) throws SQLException {
         try {
-            PreparedStatement prestat = conn.prepareStatement(SQl);
+            PreparedStatement preparedStatement = conn.prepareStatement(
+                    "update ov_chipkaart SET  kaart_nummer = ?, saldo =? , geldig_tot =?, klasse = ?, reiziger_id = ?;");
+            preparedStatement.setInt(1, inOVChipkaart.getKaart_nummer());
+            preparedStatement.setDouble(2, inOVChipkaart.getSaldo());
+            preparedStatement.setDate(3, inOVChipkaart.getGeldig_tot());
+            preparedStatement.setInt(4, inOVChipkaart.getKlasse());
+            preparedStatement.setInt(5, inOVChipkaart.getReiziger().getId());
+            preparedStatement.executeQuery();
+            preparedStatement.close();
+            return true;
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
+        }
+        return false;
+    }
 
-            prestat.setInt(1, ovChipkaart.getKaart_nummer());
-            prestat.setDate(2, ovChipkaart.getGeldig_tot());
-            prestat.setInt(3, ovChipkaart.getKlasse());
-            prestat.setFloat(4, ovChipkaart.getSaldo());
-            prestat.setInt(5, ovChipkaart.getReiziger_id());
+    @Override
+    public boolean save(OVChipkaart inOVChipkaart) throws SQLException {
+        OVChipkaart ovChipkaart = null;
+        try {
+            PreparedStatement preparedStatement = conn.prepareStatement(
+                    "INSERT INTO ov_chipkaart (kaart_nummer, saldo, geldig_tot, klasse, reiziger_id) VALUES (?,?,?,?,?);");
+            preparedStatement.setInt(1, inOVChipkaart.getKaart_nummer());
+            preparedStatement.setDouble(2, inOVChipkaart.getSaldo());
+            preparedStatement.setDate(3, inOVChipkaart.getGeldig_tot());
+            preparedStatement.setInt(4, inOVChipkaart.getKlasse());
+            preparedStatement.setInt(5, inOVChipkaart.getReiziger().getId());
+            preparedStatement.executeQuery();
+            preparedStatement.close();
+            return true;
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
+        }
+        return false;
+    }
 
-            prestat.executeUpdate();
+    @Override
+    public boolean delete(OVChipkaart inOVChipkaart) throws SQLException {
+        OVChipkaart ovChipkaart = null;
+        try {
+            PreparedStatement preparedStatement1 = conn
+                    .prepareStatement("DELETE FROM ov_chipkaart_product WHERE kaartnummer = ?;");
+            preparedStatement1.setInt(1, inOVChipkaart.getKaart_nummer());
+            preparedStatement1.executeQuery();
+            preparedStatement1.close();
 
-            for (Product p : ovChipkaart.getProducten()) {
-                PreparedStatement prestat2 = conn.prepareStatement(SQL2);
-                prestat2.setInt(1, ovChipkaart.getKaart_nummer());
-                prestat2.setInt(2, p.getProduct_nummer());
-                prestat2.setString(3, "actief");
-                prestat2.setDate(4, Date.valueOf(LocalDate.now()));
+            PreparedStatement preparedStatement = conn
+                    .prepareStatement("DELETE FROM ov_chipkaart WHERE kaart_nummer = ?;");
+            preparedStatement.setInt(1, inOVChipkaart.getKaart_nummer());
+            preparedStatement.executeQuery();
+            preparedStatement.close();
+            return true;
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
+        }
+        return false;
+    }
 
-                prestat2.executeUpdate();
+    @Override
+    public List<OVChipkaart> findAll() throws SQLException {
+        ArrayList<OVChipkaart> ovChipkaarten = new ArrayList<OVChipkaart>();
+        try {
+            PreparedStatement preparedStatement = conn.prepareStatement(
+                    "SELECT ov_chipkaart_product.kaart_nummer, ov_chipkaart.geldig_tot, ov_chipkaart.klasse, ov_chipkaart.saldo, product.product_nummer, product.naam, product.beschrijving, product.prijs "
+                            +
+                            "FROM ov_chipkaart " +
+                            "left JOIN ov_chipkaart_product " +
+                            "ON ov_chipkaart_product.kaart_nummer = ov_chipkaart.kaart_nummer " +
+                            "LEFT JOIN product " +
+                            "ON ov_chipkaart_product.product_nummer = product.product_nummer " +
+                            "ORDER BY kaart_nummer;");
+            ResultSet resultSet = preparedStatement.executeQuery();
+            while (resultSet != null && resultSet.next()) {
+                OVChipkaart ovChipkaart = parseStatement(resultSet);
+                Product prodcut = pdao.parseResultSet(resultSet);
+                if (ovChipkaart != null) {
+                    if (ovChipkaarten == null || !ovChipkaarten.contains(ovChipkaart)) {
+                        ovChipkaarten.add(ovChipkaart);
+                    }
+                    if (ovChipkaarten != null) {
+                        for (OVChipkaart inOvKaarten : ovChipkaarten) {
+                            if (inOvKaarten != null && inOvKaarten.equals(ovChipkaart)) {
+                                inOvKaarten.addProdcut(prodcut);
+                            }
+                        }
+                    }
+                }
+
             }
-
-            return true;
-
-        } catch (SQLException throwables) {
-            throwables.printStackTrace();
-        }
-
-        return false;
-    }
-
-    @Override
-    public boolean update(OVChipkaart ovChipkaart) {
-        String SQL = "UPDATE ov_chipkaart SET saldo = saldo + 10 WHERE kaart_nummer = ?";
-        String SQL2 = "UPDATE ov_chipkaart_product SET last_update = ? WHERE kaart_nummer = ?";
-
-        try {
-            PreparedStatement prestat = conn.prepareStatement(SQL);
-            PreparedStatement prestat2 = conn.prepareStatement(SQL2);
-
-            prestat.setInt(1, ovChipkaart.getKaart_nummer());
-            prestat2.setDate(1, Date.valueOf(LocalDate.now()));
-            prestat2.setInt(2, ovChipkaart.getKaart_nummer());
-
-            prestat.executeUpdate();
-            prestat2.executeUpdate();
-            return true;
-
-        } catch (SQLException throwables) {
-            throwables.printStackTrace();
-        }
-        return false;
-    }
-
-    @Override
-    public boolean delete(OVChipkaart ovChipkaart) {
-        String SQL = "DELETE FROM ov_chipkaart WHERE kaart_nummer = ?";
-        String SQL2 = "DELETE FROM ov_chipkaart_product WHERE kaart_nummer = ?";
-
-        try {
-            PreparedStatement prestat = conn.prepareStatement(SQL);
-            PreparedStatement prestat2 = conn.prepareStatement(SQL2);
-
-            prestat.setInt(1, ovChipkaart.getKaart_nummer());
-            prestat2.setInt(1, ovChipkaart.getKaart_nummer());
-
-            prestat.executeUpdate();
-            prestat2.executeUpdate();
-            return true;
-
-        } catch (SQLException throwables) {
-            throwables.printStackTrace();
-        }
-
-        return false;
-    }
-
-    @Override
-    public List<OVChipkaart> findByReiziger(Reiziger reiziger) {
-        String SQL = "SELECT * FROM ov_chipkaart WHERE reiziger_id = ?";
-
-        try {
-            PreparedStatement prestat = conn.prepareStatement(SQL);
-
-            prestat.setInt(1, reiziger.getId());
-
-            ResultSet rs = prestat.executeQuery();
-
-            List<OVChipkaart> ovs = new ArrayList<>();
-
-            while (rs.next()) {
-                int knm = rs.getInt("kaart_nummer");
-                Date geldigTot = rs.getDate("geldig_tot");
-                int klasse = rs.getInt("klasse");
-                float saldo = rs.getFloat("saldo");
-                int rid = rs.getInt("reiziger_id");
-
-                OVChipkaart ov = new OVChipkaart(knm, geldigTot, klasse, saldo, rid);
-
-
-                ovs.add(ov);
-            }
-
-            return ovs;
-
-        } catch (SQLException throwables) {
-            throwables.printStackTrace();
+            resultSet.close();
+            return ovChipkaarten;
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
         }
         return null;
     }
 
     @Override
-    public List<OVChipkaart> findAll() {
-        String SQL = "SELECT * FROM ov-chipkaart";
-
+    public OVChipkaart findById(int id) throws SQLException {
+        OVChipkaart ovChipkaart = null;
         try {
-            PreparedStatement prestat = conn.prepareStatement(SQL);
+            PreparedStatement preparedStatement = conn
+                    .prepareStatement("SELECT * FROM ov_chipkaart WHERE kaart_nummer = ?;");
+            preparedStatement.setInt(1, id);
+            ResultSet resultSet = preparedStatement.executeQuery();
 
-            ResultSet rs = prestat.executeQuery();
-
-            List<OVChipkaart> ovs = new ArrayList<>();
-
-            while (rs.next()) {
-                int knm = rs.getInt("kaart_nummer");
-                Date geldigTot = rs.getDate("geldig_tot");
-                int klasse = rs.getInt("klasse");
-                float saldo = rs.getFloat("saldo");
-                int rid = rs.getInt("reiziger_id");
-
-                OVChipkaart ov = new OVChipkaart(knm, geldigTot, klasse, saldo, rid);
-                List<Product> pr = pdao.findByOVChipkaart(ov);
-                ov.setProducten(pr);
-                ovs.add(ov);
+            if (resultSet != null && resultSet.next()) {
+                ovChipkaart = (parseStatement(resultSet));
             }
-
-            return ovs;
-
-        } catch (SQLException throwables) {
-            throwables.printStackTrace();
+            resultSet.close();
+            return ovChipkaart;
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
         }
-
         return null;
+    }
+
+    @Override
+    public List<OVChipkaart> findByReiziger(Reiziger r) throws SQLException {
+        ArrayList<OVChipkaart> ovChipkaarten = new ArrayList<OVChipkaart>();
+        try {
+            PreparedStatement preparedStatement = conn
+                    .prepareStatement("SELECT * FROM ov_chipkaart WHERE reiziger_id = ?;");
+            preparedStatement.setInt(1, r.getId());
+            ResultSet resultSet = preparedStatement.executeQuery();
+
+            while (resultSet != null && resultSet.next()) {
+                ovChipkaarten.add(parseStatement(resultSet));
+            }
+            resultSet.close();
+            return ovChipkaarten;
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
+        }
+        return null;
+    }
+
+    public OVChipkaart parseStatement(ResultSet theSet) throws SQLException {
+        OVChipkaart o = new OVChipkaart();
+        o.setKaart_nummer(theSet.getInt("kaart_nummer"));
+        o.setSaldo(theSet.getDouble("saldo"));
+        o.setGeldig_tot(theSet.getDate("geldig_tot"));
+        o.setKlasse(theSet.getInt("klasse"));
+        if (o.getKaart_nummer() == 0) {
+            return null;
+        }
+        return o;
     }
 }

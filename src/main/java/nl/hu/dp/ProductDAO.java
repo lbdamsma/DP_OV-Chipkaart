@@ -1,8 +1,18 @@
 package nl.hu.dp;
 
+import java.sql.SQLException;
+import java.util.List;
 
 public interface ProductDAO {
-    boolean save(Product product);
-    boolean update(Product product);
-    boolean delete(Product product);
+    public boolean save(Product product) throws SQLException;
+
+    public boolean update(Product product) throws SQLException;
+
+    public boolean delete(Product product) throws SQLException;
+
+    public List<Product> findAll() throws SQLException;
+
+    public Product findById(int id) throws SQLException;
+
+    public List<Product> findByOVChipkaart(OVChipkaart ovChipkaart) throws SQLException;
 }
