@@ -1,48 +1,26 @@
 package nl.hu.dp;
 
-import java.sql.Date;
+import java.sql.PreparedStatement;
+import java.sql.Statement;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
 public class Reiziger {
-
     private int id;
-    private String voorletters;
-    private String tussenvoegsels;
-    private String achternaam;
-    private Date geboortedatum;
+    private String voorletters = "";
+    private String tussenvoegsel = "";
+    private String achternaam = "";
+    private java.sql.Date geboortedatum = new java.sql.Date(0);
     private Adres adres;
-    private List<OVChipkaart> OVChipkaarten = new ArrayList<>();
+    private ArrayList<OVChipkaart> oVChipkaarten;
 
-    public Reiziger(int id, String voorletters, String tussenvoegsels, String achternaam, Date geboortedatum) {
-        this.id = id;
-        this.voorletters = voorletters;
-        this.tussenvoegsels = tussenvoegsels;
-        this.achternaam = achternaam;
-        this.geboortedatum = geboortedatum;
+    public List<OVChipkaart> getOVChipkaarten() {
+        return this.oVChipkaarten;
     }
 
-    public int getId() {
-        return id;
-    }
-    public void setId(int id) {
-        this.id = id;
-    }
-
-    public String getVoorletters() {
-        return voorletters;
-    }
-
-    public String getTussenvoegsels() {
-        return tussenvoegsels;
-    }
-
-    public String getAchternaam() {
-        return achternaam;
-    }
-
-    public Date getGeboortedatum() {
-        return geboortedatum;
+    public void setoVChipkaarten(List<OVChipkaart> oVChipkaarten) {
+        this.oVChipkaarten = (ArrayList<OVChipkaart>) oVChipkaarten;
     }
 
     public Adres getAdres() {
@@ -53,14 +31,90 @@ public class Reiziger {
         this.adres = adres;
     }
 
-    public List<OVChipkaart> getOVChipkaarten() {
-        return OVChipkaarten;
+    public Reiziger(int id, String voorletters, String tussenvoegsel, String achternaam, Date geboortedatum) {
+        this.id = id;
+        this.voorletters = voorletters;
+        this.tussenvoegsel = tussenvoegsel;
+        this.achternaam = achternaam;
+        this.geboortedatum = geboortedatum;
     }
 
-    @Override
+    public Reiziger() {
+    }
+
     public String toString() {
-        return "Reiziger: " + "id: " + id + ", voorletters: '" + voorletters + '\'' +
-                ", tussenvoegsels: '" + tussenvoegsels + '\'' + ", achternaam: '" +
-                achternaam + '\'' + ", geboortedatum: " + geboortedatum + ", " + adres;
+        String s = "Reiziger:\t(" + this.id + " " +
+                this.voorletters + " " +
+                this.achternaam + " " +
+                this.tussenvoegsel + " " +
+                this.geboortedatum.toString() + " " +
+                ")";
+        if (adres != null) {
+            s += adres.toString();
+        }
+        if (oVChipkaarten != null) {
+            for (OVChipkaart ovChipkaart : oVChipkaarten) {
+                s += "\n\t" + ovChipkaart.toString();
+            }
+        }
+        return s;
+    }
+
+    public java.sql.Date getGeboortedatum() {
+        return geboortedatum;
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public String getVoorletters() {
+        return voorletters;
+    }
+
+    public String getAchternaam() {
+        return achternaam;
+    }
+
+    public String getTussenvoegsel() {
+        return tussenvoegsel;
+    }
+
+    public void setAchternaam(String achternaam) {
+        if (achternaam != null) {
+            if (achternaam.length() > 255) {
+                achternaam = achternaam.substring(0, 255);
+            }
+            this.achternaam = achternaam;
+        }
+    }
+
+    public void setGeboortedatum(Date geboortedatum) {
+        if (geboortedatum != null) {
+            if (geboortedatum.after(new Date(0)))
+                this.geboortedatum = geboortedatum;
+        }
+    }
+
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    public void setTussenvoegsel(String tussenvoegsel) {
+        if (tussenvoegsel != null) {
+            if (tussenvoegsel.length() > 10) {
+                tussenvoegsel = tussenvoegsel.substring(0, 10);
+            }
+            this.tussenvoegsel = tussenvoegsel;
+        }
+    }
+
+    public void setVoorletters(String voorletters) {
+        if (voorletters != null) {
+            if (voorletters.length() > 10) {
+                voorletters = voorletters.substring(0, 10);
+            }
+            this.voorletters = voorletters;
+        }
     }
 }

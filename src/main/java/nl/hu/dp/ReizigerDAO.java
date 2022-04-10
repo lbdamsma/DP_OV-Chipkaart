@@ -1,13 +1,22 @@
 package nl.hu.dp;
 
+import java.sql.Connection;
+import java.sql.RowId;
+import java.sql.SQLException;
 import java.util.List;
 
 public interface ReizigerDAO {
+    boolean update(Reiziger inReiziger) throws SQLException;
 
-    boolean save(Reiziger reiziger);
-    boolean update(Reiziger reiziger);
-    boolean delete(Reiziger reiziger);
-    Reiziger findById(int id);
-    List<Reiziger> findByGbdatum(String datum);
-    List<Reiziger> findAll();
+    boolean save(Reiziger inReiziger) throws SQLException;
+
+    boolean delete(Reiziger inReiziger) throws SQLException;
+
+    List<Reiziger> findAll() throws SQLException;
+
+    Reiziger findById(int id) throws SQLException;
+
+    AdresDAO getAdao();
+
+    OVChipkaartDAO getOdao();
 }

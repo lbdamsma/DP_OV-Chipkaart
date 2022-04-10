@@ -1,11 +1,18 @@
 package nl.hu.dp;
 
+import java.sql.SQLException;
 import java.util.List;
 
 public interface AdresDAO {
-    boolean save(Adres adres);
-    boolean update(Adres adres);
-    boolean delete(Adres adres);
-    Adres findByReiziger(Reiziger reiziger);
-    List<Adres> findAll();
+    public boolean save(Adres adres) throws SQLException;
+
+    public boolean update(Adres adres) throws SQLException;
+
+    public boolean delete(Adres adres) throws SQLException;
+
+    public List<Adres> findAll() throws SQLException;
+
+    public Adres findById(int id) throws SQLException;
+
+    public Adres findByReiziger(Reiziger reziger) throws SQLException;
 }

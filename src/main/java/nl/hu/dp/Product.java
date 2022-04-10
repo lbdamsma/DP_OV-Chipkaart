@@ -4,75 +4,84 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Product {
-
-    private int product_nummer;
+    private int productNummer;
     private String naam;
     private String beschrijving;
-    private float prijs;
-    private List<OVChipkaart> OVChipkaarten = new ArrayList<>();
+    private double prijs;
+    private List<OVChipkaart> ovChipkaarten = new ArrayList<OVChipkaart>();
 
-    public Product(int porduct_nummer, String naam, String beschrijving, float prijs) {
-        this.product_nummer = porduct_nummer;
-        this.naam = naam;
-        this.beschrijving = beschrijving;
-        this.prijs = prijs;
+    public List<OVChipkaart> getOvChipkaarten() {
+        return ovChipkaarten;
     }
 
-    public int getProduct_nummer() {
-        return product_nummer;
+    public void setOvChipkaarten(List<OVChipkaart> ovChipkaarten) {
+        this.ovChipkaarten = (ArrayList) ovChipkaarten;
+    }
+
+    public int getProductNummer() {
+        return productNummer;
+    }
+
+    public void setProductNummer(int productNummer) {
+        this.productNummer = productNummer;
     }
 
     public String getNaam() {
         return naam;
     }
 
+    public void setNaam(String naam) {
+        this.naam = naam;
+    }
+
     public String getBeschrijving() {
         return beschrijving;
     }
 
-    public float getPrijs() {
+    public void setBeschrijving(String beschrijving) {
+        this.beschrijving = beschrijving;
+    }
+
+    public double getPrijs() {
         return prijs;
     }
 
-    public List<OVChipkaart> getOVChipkaarten() {
-        return OVChipkaarten;
+    public void setPrijs(double prijs) {
+        this.prijs = prijs;
     }
 
-    public boolean addOVChipkaart(OVChipkaart ovChipkaart) {
-        for (OVChipkaart ov : OVChipkaarten) {
-            if (ov.getKaart_nummer() == ovChipkaart.getKaart_nummer()){
-                return false;
-            }
-        }
-
-        OVChipkaarten.add(ovChipkaart);
-        return true;
+    public Product() {
     }
 
-    public boolean deleteOVChipkaart(OVChipkaart ovChipkaart) {
-        for (OVChipkaart ov : OVChipkaarten) {
-            if (ov.getKaart_nummer() == ovChipkaart.getKaart_nummer()) {
-                OVChipkaarten.remove(ovChipkaart);
-                return true;
-            }
-        }
+    public Product(int productNummer, String naam, String beschrijving, double prijs) {
+        this.productNummer = productNummer;
+        this.naam = naam;
+        this.beschrijving = beschrijving;
+        this.prijs = prijs;
+    }
 
-        return false;
+    public void addOVChipkaart(OVChipkaart ovChipkaart) {
+        if (!ovChipkaarten.contains(ovChipkaart)) {
+            ovChipkaarten.add(ovChipkaart);
+        }
     }
 
     @Override
     public String toString() {
-        String x = "";
-
-        for(OVChipkaart ov : OVChipkaarten) {
-            x += ov.getKaart_nummer() + ", ";
-        }
-
-        return "Product: " +
-                "product_nummer = " + product_nummer +
-                ", naam = '" + naam + '\'' +
-                ", beschrijving = '" + beschrijving + '\'' +
-                ", prijs = " + prijs +
-                ", kaart(en) = " + x;
+        String s = "";
+        s = String.format("\tProduct: %s, Beschrijving: %s, Heeft de prijs: %.2f", naam, beschrijving, prijs);
+        return s;
     }
+
+    @Override
+    public boolean equals(Object p) {
+        if (p != null && p instanceof Product) {
+            p = (Product) p;
+            if (this.productNummer == ((Product) p).getProductNummer()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
 }

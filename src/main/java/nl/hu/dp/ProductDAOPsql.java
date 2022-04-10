@@ -1,217 +1,223 @@
 package nl.hu.dp;
 
+import javax.xml.transform.Result;
 import java.sql.*;
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.time.LocalDate;
 
 public class ProductDAOPsql implements ProductDAO {
-
     private Connection conn;
-    private OVChipkaartDAOPsql ovcdao;
+
+    public OVChipkaartDAOPsql getOdoa() {
+        return odoa;
+    }
+
+    public void setOdoa(OVChipkaartDAOPsql odoa) {
+        this.odoa = odoa;
+    }
+
+    private OVChipkaartDAOPsql odoa;
 
     public ProductDAOPsql(Connection conn) {
         this.conn = conn;
     }
 
-    public ProductDAOPsql(Connection conn, OVChipkaartDAOPsql ovcdao) {
+    public Connection getConn() {
+        return conn;
+    }
+
+    public void setConn(Connection conn) {
         this.conn = conn;
-        this.ovcdao = ovcdao;
-    }
-
-    public void setOvcdao(OVChipkaartDAOPsql ovcdao) {
-        this.ovcdao = ovcdao;
     }
 
     @Override
-    public boolean save(Product product) {
-        String SQL = "INSERT INTO product VALUES (?, ?, ?, ?)";
-        String SQL2 = "INSERT INTO ov_chipkaart_product VALUES (?, ?, ?, ?)";
-
+    public boolean save(Product inProduct) throws SQLException {
         try {
-            PreparedStatement prestat = conn.prepareStatement(SQL);
+            PreparedStatement preparedStatement = conn.prepareStatement(
+                    "INSERT INTO product (product_nummer, naam, beschrijving, prijs) VALUES (?,?,?,?);");
+            preparedStatement.setInt(1, inProduct.getProductNummer());
+            preparedStatement.setString(2, inProduct.getNaam());
+            preparedStatement.setString(3, inProduct.getBeschrijving());
+            preparedStatement.setDouble(4, inProduct.getPrijs());
+            preparedStatement.executeUpdate();
+            preparedStatement.close();
 
-            prestat.setInt(1, product.getProduct_nummer());
-            prestat.setString(2, product.getNaam());
-            prestat.setString(3, product.getBeschrijving());
-            prestat.setFloat(4, product.getPrijs());
-
-            prestat.executeUpdate();
-
-
-            for (OVChipkaart o : product.getOVChipkaarten()) {
-                PreparedStatement prestat2 = conn.prepareStatement(SQL2);
-                prestat2.setInt(1, o.getKaart_nummer());
-                prestat2.setInt(2, product.getProduct_nummer());
-                prestat2.setString(3, "actief");
-                prestat2.setDate(4, Date.valueOf(LocalDate.now()));
-
-                prestat2.executeUpdate();
+            if (inProduct.getOvChipkaarten() != null && odoa != null) {
+                for (OVChipkaart inOvKaart : inProduct.getOvChipkaarten()) {
+                    if (odoa.findById(inOvKaart.getKaart_nummer()) == null) {
+                        odoa.save(inOvKaart);
+                    }
+                    PreparedStatement preparedStatement2 = conn.prepareStatement(
+                            "INSERT INTO ov_chipkaart_product (product_nummer, kaart_nummer, status, last_update) VALUES (?,?,?,?);");
+                    preparedStatement2.setInt(1, inProduct.getProductNummer());
+                    preparedStatement2.setInt(2, inOvKaart.getKaart_nummer());
+                    preparedStatement2.setString(3, "actief");
+                    preparedStatement2.setDate(4, Date.valueOf(LocalDate.now()));
+                    preparedStatement2.executeUpdate();
+                    preparedStatement2.close();
+                }
             }
             return true;
-
-        } catch (SQLException throwables) {
-            throwables.printStackTrace();
-        }
-
-        return false;
-    }
-
-    @Override
-    public boolean update(Product product) {
-//       De update functie is niet heel erg uitgebreid of complex, maar als standaard heb ik genomen dat de prijs van het product met 5 word verhoogd
-
-        String SQL =  "UPDATE product SET prijs = prijs + 5 WHERE product_nummer = ?";
-
-//        Ik nam aan dat "last update" in de koppel tabel stond voor wanneer een product of ovchipkaart voor het laatst is veranderd/geupdate
-//        En ik verander de prijs van een product, dus dan moet in de koppel tabel de "last update" upgedate worden op de plekken met dat zelfde product nummer
-
-        String SQL2 = "DELETE FROM ov_chipkaart_product WHERE product_nummer = ?";
-        String SQL3 = "INSERT INTO ov_chipkaart_product VALUES (?, ?, ?, ?)";
-
-
-        try {
-            PreparedStatement prestat = conn.prepareStatement(SQL);
-            PreparedStatement prestat2 = conn.prepareStatement(SQL2);
-
-            prestat.setInt(1, product.getProduct_nummer());
-            prestat2.setInt(1, product.getProduct_nummer());
-
-            prestat.executeUpdate();
-            prestat2.executeUpdate();
-
-            for (OVChipkaart o : product.getOVChipkaarten()) {
-                PreparedStatement prestat3 = conn.prepareStatement(SQL3);
-                prestat3.setInt(1, o.getKaart_nummer());
-                prestat3.setInt(2, product.getProduct_nummer());
-                prestat3.setString(3, "actief");
-                prestat3.setDate(4, Date.valueOf(LocalDate.now()));
-
-                prestat3.executeUpdate();
-            }
-
-            return true;
-
-        } catch (SQLException throwables) {
-            throwables.printStackTrace();
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
         }
         return false;
     }
 
     @Override
-    public boolean delete(Product product) {
-        String SQL = "DELETE FROM product WHERE product_nummer = ?";
-        String SQL2 = "DELETE FROM ov_chipkaart_product WHERE product_nummer = ?";
-
+    public boolean update(Product inProduct) throws SQLException {
         try {
-            PreparedStatement prestat = conn.prepareStatement(SQL);
-            PreparedStatement prestat2 = conn.prepareStatement(SQL2);
-
-
-            prestat.setInt(1, product.getProduct_nummer());
-            prestat2.setInt(1, product.getProduct_nummer());
-
-            prestat2.executeUpdate();
-            prestat.executeUpdate();
-
+            delete(inProduct);
+            save(inProduct);
             return true;
-
-        } catch (SQLException throwables) {
-            throwables.printStackTrace();
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
         }
-
         return false;
     }
 
-    public List<Product> findByOVChipkaart(OVChipkaart ovChipkaart) {
-        String SQL = "SELECT ov_chipkaart_product.kaart_nummer, product.product_nummer, product.naam, product.beschrijving, product.prijs " +
-                "FROM product " +
-                "JOIN ov_chipkaart_product " +
-                "ON ov_chipkaart_product.product_nummer = product.product_nummer " +
-                "WHERE ov_chipkaart_product.kaart_nummer = ? " +
-                "ORDER BY kaart_nummer, product_nummer";
-
+    @Override
+    public boolean delete(Product product) throws SQLException {
         try {
-            PreparedStatement prestat = conn.prepareStatement(SQL);
-
-            prestat.setInt(1, ovChipkaart.getKaart_nummer());
-
-            ResultSet rs = prestat.executeQuery();
-
-            List<Product> producten = new ArrayList<>();
-
-            while (rs.next()) {
-                int prnr = rs.getInt("product_nummer");
-                String nm = rs.getString("naam");
-                String besch = rs.getString("beschrijving");
-                Float prijs = rs.getFloat("prijs");
-
-                Product pr = new Product(prnr, nm, besch, prijs);
-                pr.addOVChipkaart(ovChipkaart);
-                producten.add(pr);
+            if (findById(product.getProductNummer()).getOvChipkaarten().size() > 0) {
+                PreparedStatement preparedStatement1 = conn
+                        .prepareStatement("DELETE FROM ov_chipkaart_product WHERE product_nummer = ?");
+                preparedStatement1.setInt(1, product.getProductNummer());
+                preparedStatement1.executeUpdate();
+                preparedStatement1.close();
             }
 
-            return producten;
+            PreparedStatement preparedStatement = conn.prepareStatement("DELETE FROM product WHERE product_nummer = ?");
+            preparedStatement.setInt(1, product.getProductNummer());
+            preparedStatement.executeUpdate();
 
-        } catch (SQLException throwables) {
-            throwables.printStackTrace();
+            preparedStatement.close();
+            return true;
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
         }
-        return null;
+        return false;
     }
 
-    public List<Product> findAll(){
-
-//        Hier veranderd van "SELECT * FROM product;" naar deze query met JOIN zodat je ook de ovchipkaarten ook op haalt en toevoegd aan de producten
-//        Hetzelfde in OVChipkaartDAOPsql
-
-        String SQL = "SELECT ov_chipkaart_product.kaart_nummer, ov_chipkaart.geldig_tot, ov_chipkaart.klasse, ov_chipkaart.saldo, ov_chipkaart.reiziger_id, product.product_nummer, product.naam, product.beschrijving, product.prijs " +
-                "FROM product " +
-                "JOIN ov_chipkaart_product " +
-                "ON ov_chipkaart_product.product_nummer = product.product_nummer " +
-                "JOIN ov_chipkaart " +
-                "ON ov_chipkaart_product.kaart_nummer = ov_chipkaart.kaart_nummer " +
-                "ORDER BY kaart_nummer, product_nummer;";
-
+    @Override
+    public List<Product> findAll() throws SQLException {
+        ArrayList<Product> producten = new ArrayList<Product>();
         try {
-            PreparedStatement prestat = conn.prepareStatement(SQL);
+            PreparedStatement preparedStatement = conn.prepareStatement(
+                    "SELECT ov_chipkaart_product.kaart_nummer, ov_chipkaart.geldig_tot, ov_chipkaart.klasse, ov_chipkaart.saldo, product.product_nummer, product.naam, product.beschrijving, product.prijs "
+                            +
+                            "FROM product " +
+                            "left JOIN ov_chipkaart_product " +
+                            "ON ov_chipkaart_product.product_nummer = product.product_nummer " +
+                            "LEFT JOIN ov_chipkaart " +
+                            "ON ov_chipkaart_product.kaart_nummer = ov_chipkaart.kaart_nummer " +
+                            "ORDER BY product_nummer;");
 
-            ResultSet rs = prestat.executeQuery();
+            ResultSet set = preparedStatement.executeQuery();
+            while (set != null && set.next()) {
+                Product p = (parseResultSet(set));
+                OVChipkaart o = odoa.parseStatement(set);
 
-            List<Product> producten = new ArrayList<>();
-
-            while(rs.next()) {
-                int prnr = rs.getInt("product_nummer");
-                String nm = rs.getString("naam");
-                String besch = rs.getString("beschrijving");
-                Float prijs = rs.getFloat("prijs");
-
-                int knm = rs.getInt("kaart_nummer");
-                Date geldigTot = rs.getDate("geldig_tot");
-                int klasse = rs.getInt("klasse");
-                float saldo = rs.getFloat("saldo");
-                int rid = rs.getInt("reiziger_id");
-
-                OVChipkaart ov = new OVChipkaart(knm, geldigTot, klasse, saldo, rid);
-
-                Product pr = new Product(prnr, nm, besch, prijs);
-
-
-                for(Product p : producten){
-                    if(p.getProduct_nummer() == pr.getProduct_nummer()){
-                        p.addOVChipkaart(ov);
-                        break;
+                if (producten == null || !producten.contains(p)) {
+                    producten.add(p);
+                }
+                if (producten != null) {
+                    for (Product inProduct : producten) {
+                        if (inProduct.equals(p)) {
+                            inProduct.addOVChipkaart(o);
+                        }
                     }
                 }
-                pr.addOVChipkaart(ov);
-                producten.add(pr);
             }
-
+            set.close();
+            preparedStatement.close();
             return producten;
-
-        } catch (SQLException throwables) {
-            throwables.printStackTrace();
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
         }
-
-        return null;
+        return producten;
     }
+
+    @Override
+    public Product findById(int id) throws SQLException {
+        Product p = null;
+        try {
+            PreparedStatement preparedStatement = conn.prepareStatement(
+                    "SELECT ov_chipkaart_product.kaart_nummer, ov_chipkaart.geldig_tot, ov_chipkaart.klasse, ov_chipkaart.saldo, product.product_nummer, product.naam, product.beschrijving, product.prijs "
+                            +
+                            "FROM product " +
+                            "left JOIN ov_chipkaart_product " +
+                            "ON ov_chipkaart_product.product_nummer = product.product_nummer " +
+                            "left JOIN ov_chipkaart " +
+                            "ON ov_chipkaart_product.kaart_nummer = ov_chipkaart.kaart_nummer " +
+                            "WHERE product.product_nummer = ? " +
+                            "ORDER BY product_nummer;");
+            preparedStatement.setInt(1, id);
+            ResultSet set = preparedStatement.executeQuery();
+            while (set != null && set.next()) {
+                OVChipkaart o = odoa.parseStatement(set);
+                if (p == null) {
+                    p = (parseResultSet(set));
+                }
+                if (o != null) {
+                    p.addOVChipkaart(o);
+                }
+            }
+            set.close();
+            preparedStatement.close();
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
+        }
+        return p;
+    }
+
+    public Product parseResultSet(ResultSet set) throws SQLException {
+        Product product = new Product();
+        product.setProductNummer(set.getInt("product_nummer"));
+        product.setNaam(set.getString("naam"));
+        product.setBeschrijving(set.getString("beschrijving"));
+        product.setPrijs(set.getDouble("prijs"));
+        return product;
+    }
+
+    @Override
+    public ArrayList<Product> findByOVChipkaart(OVChipkaart ovChipkaart) {
+        ArrayList<Product> producten = new ArrayList<Product>();
+        try {
+            PreparedStatement preparedStatement = conn.prepareStatement(
+                    "SELECT ov_chipkaart_product.kaart_nummer, ov_chipkaart.geldig_tot, ov_chipkaart.klasse, ov_chipkaart.saldo, product.product_nummer, product.naam, product.beschrijving, product.prijs "
+                            +
+                            "FROM product " +
+                            "inner JOIN ov_chipkaart_product " +
+                            "ON ov_chipkaart_product.product_nummer = product.product_nummer " +
+                            "inner JOIN ov_chipkaart " +
+                            "ON ov_chipkaart_product.kaart_nummer = ov_chipkaart.kaart_nummer " +
+                            "WHERE ov_chipkaart.kaart_nummer = ?" +
+                            "ORDER BY product_nummer;");
+            preparedStatement.setInt(1, ovChipkaart.getKaart_nummer());
+            ResultSet set = preparedStatement.executeQuery();
+            while (set != null && set.next()) {
+                Product p = (parseResultSet(set));
+                OVChipkaart o = odoa.parseStatement(set);
+
+                if (producten == null || !producten.contains(p)) {
+                    producten.add(p);
+                }
+                if (producten != null) {
+                    for (Product inProduct : producten) {
+                        if (inProduct.equals(p)) {
+                            inProduct.addOVChipkaart(o);
+                        }
+                    }
+                }
+            }
+            set.close();
+            preparedStatement.close();
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
+        }
+        return producten;
+    }
+
 }

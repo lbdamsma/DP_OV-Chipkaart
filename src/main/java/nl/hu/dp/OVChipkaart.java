@@ -5,87 +5,99 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class OVChipkaart {
-
     private int kaart_nummer;
-    private Date geldig_tot;
+    private java.sql.Date geldig_tot = new java.sql.Date(0);
     private int klasse;
-    private float saldo;
-    private int reiziger_id;
-    private List<Product> producten = new ArrayList<>();
+    private double saldo;
+    private Reiziger reiziger;
+    private ArrayList<Product> producten = new ArrayList<Product>();
 
-    public OVChipkaart(int kaart_nummer, Date geldig_tot, int klasse, float saldo, int reiziger_id) {
+    public OVChipkaart() {
+    }
+
+    public OVChipkaart(int kaart_nummer, java.sql.Date geldig_tot, int klasse, double saldo) {
         this.kaart_nummer = kaart_nummer;
         this.geldig_tot = geldig_tot;
         this.klasse = klasse;
         this.saldo = saldo;
-        this.reiziger_id = reiziger_id;
     }
 
     public int getKaart_nummer() {
         return kaart_nummer;
     }
 
+    public void setKaart_nummer(int kaart_nummer) {
+        this.kaart_nummer = kaart_nummer;
+    }
+
     public Date getGeldig_tot() {
         return geldig_tot;
+    }
+
+    public void setGeldig_tot(Date geldig_tot) {
+        this.geldig_tot = geldig_tot;
     }
 
     public int getKlasse() {
         return klasse;
     }
 
-    public float getSaldo() {
+    public void setKlasse(int klasse) {
+        this.klasse = klasse;
+    }
+
+    public double getSaldo() {
         return saldo;
     }
 
-    public int getReiziger_id() {
-        return reiziger_id;
+    public void setSaldo(double saldo) {
+        this.saldo = saldo;
     }
 
-    public List<Product> getProducten() {
-        return producten;
+    public Reiziger getReiziger() {
+        return reiziger;
+    }
+
+    public void setReiziger(Reiziger reiziger) {
+        this.reiziger = reiziger;
     }
 
     public void setProducten(List<Product> producten) {
-        this.producten = producten;
+        this.producten = (ArrayList) producten;
     }
 
-    public boolean addProduct(Product product) {
-        for (Product p : producten) {
-            if (p.getProduct_nummer() == product.getProduct_nummer()) {
-                return false;
-            }
-        }
-        product.addOVChipkaart(this);
-        producten.add(product);
-        return true;
+    public List<Product> getProducten() {
+        return this.producten;
     }
 
-    public boolean deleteProduct(Product product) {
-        for (Product p : producten) {
-            if (p.getProduct_nummer() == product.getProduct_nummer()) {
-                product.deleteOVChipkaart(this);
-                producten.remove(product);
-                return true;
-            }
+    public void addProdcut(Product product) {
+        if (!producten.contains(product)) {
+            producten.add(product);
         }
-
-        return false;
     }
 
     @Override
     public String toString() {
-        String x = "";
-
-        for(Product p : producten) {
-            x += p.getNaam() + ", ";
+        String s = "";
+        s = String.format("OVChipkaart: %d, %d, %.2f, %s ", this.kaart_nummer, this.klasse, this.saldo,
+                this.geldig_tot);
+        if (producten != null && producten.size() > 0) {
+            s += "Met producten: ";
+            for (Product p : producten) {
+                s += p.toString();
+            }
         }
+        return s;
+    }
 
-        return "OVChipkaart: " +
-                "kaart_nummer = " + kaart_nummer +
-                ", geldig_tot = " + geldig_tot +
-                ", klasse = " + klasse +
-                ", saldo = " + saldo +
-                ", reiziger_id = " + reiziger_id +
-                ", product(en) = " + x;
+    @Override
+    public boolean equals(Object ovKaart) {
+        if (ovKaart != null && ovKaart instanceof OVChipkaart) {
+            ovKaart = (OVChipkaart) ovKaart;
+            if (((OVChipkaart) ovKaart).getKaart_nummer() != this.kaart_nummer) {
+                return true;
+            }
+        }
+        return false;
     }
 }
